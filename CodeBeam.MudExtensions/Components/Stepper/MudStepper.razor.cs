@@ -143,8 +143,27 @@ namespace MudExtensions
         [Parameter]
         public EventCallback<int> ActiveStepChanged { get; set; }
 
+        /// <summary>
+        /// This function is evaluated when the Next button is pressed.
+        /// The primary use for this function is to validate the step before continuing.
+        /// </summary>
         [Parameter]
         public Func<StepChangeDirection, bool> PreventStepChange { get; set; }
+        
+        /// <summary>
+        /// This function is evaluated when the Skip button is pressed. 
+        /// The primary use for this function is to validate if skipping can be done
+        /// (Eg. When the user is in the middle of filling the form)
+        /// It can be used to set or reset some data on skip. 
+        /// </summary>
+        [Parameter]
+        public Func<StepChangeDirection, bool> PreventSkipChange { get; set; }
+
+        /// <summary>
+        /// Is triggered after a step has been skipped.
+        /// </summary>
+        [Parameter]
+        public EventCallback<int> SkipHasOccured { get; set; }
 
         List<MudStep> _steps = new();
         List<MudStep> _allSteps = new();
@@ -271,7 +290,7 @@ namespace MudExtensions
             if (isActiveStep)
             {
                 var stepChangeDirection = (moveToNextStep ? StepChangeDirection.Forward : StepChangeDirection.None);
-                if (PreventStepChange != null && PreventStepChange.Invoke(stepChangeDirection) == true)
+                if (PreventSkipChange != null && PreventSkipChange.Invoke(stepChangeDirection) == true)
                 {
                     return;
                 }
@@ -282,6 +301,7 @@ namespace MudExtensions
             {
                 await SetActiveIndex(1, skipPreventProcess: true);
             }
+            await SkipHasOccured.InvokeAsync();
         }
 
         protected bool IsStepActive(MudStep step)
